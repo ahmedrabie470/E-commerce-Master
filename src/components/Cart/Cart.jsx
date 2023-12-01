@@ -1,79 +1,84 @@
-import React, { useContext } from 'react'
-import { CartContext } from '../../Context/CartContextProvider'
-import { Link } from 'react-router-dom';
-import LoadingScreen from '../LoadingScreen/LoadingScreen';
-import $ from 'jquery'
+import React, { useContext, useEffect, useState } from "react";
+import { CartContext } from "../Context/CartContext";
+import { InfinitySpin } from "react-loader-spinner";
+import { Link } from "react-router-dom";
+
+
 export default function Cart() {
-  
-  
-  const {totalCartPrice ,cartProducts ,removeFromCart, updateCount}= useContext(CartContext)
-  
-  function removeProduct(id){
-    removeFromCart(id);
-    $('.removed').fadeIn(1000,function(){
-      setTimeout(() => {
-        $('.removed').fadeOut(1000)
-      }, 2000);
-    })
+  let { getUserCartItems  , removeItem , updateProductCount} = useContext(CartContext);
+  let [cartDetails, setCartDetails] = useState(null);
+
+  async function getCart() {
+    let { data } = await getUserCartItems();
+    setCartDetails(data);
   }
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  return <>
-  {cartProducts ? <div className='container'>
-    <div className='d-flex justify-content-between my-3 align-items-center '>
-    <h3>total Cart Price : <span className='tw-text-sky-700'>{totalCartPrice}</span></h3>
-    <Link to={'/payment'}><button className='btn tw-bg-sky-700 hover:tw-bg-sky-800/50 text-white'>Confirm</button></Link>
-    </div>
-    <div className="row">
-    {cartProducts.map(function (item, index) {
-              return (
-                <div key={index} className="col-md-2 mt-4 position-relative mb-3">
-                  
-                  <div className="tw-bg-sky-700 p-1 tw-rounded-tl-xl tw-rounded-br-xl tw-border-sky-700/50 tw-rounded-right">
-                  <Link className="text-decoration-none" to={`/productdetails/${item.product._id}`}>
-                    <img
-                      className="w-100"
-                      src={item.product.imageCover}
-                      alt={item.product.title}
-                    />
-                  
-                  
-                    <div className="text-white ">
-                      <h6 className="text-center my-2">
-                        {item.product.title.slice(0, item.product.title.indexOf(" ", 10))}
-                      </h6>
-                      
-                      <h6>Count: {item.count}</h6>
-                      <span>price:{item.price}</span>
-                      </div>
-                      </Link>
-                      
-                      <input type="number" placeholder='counter' value={item.count} min={1} onBlur={function(e){e.target.value === '' ? removeProduct(item.product.id) : <></>}} onChange={function(e){updateCount(item.product.id , e.target.value)}} className='form-control my-2' />
-                      <button onClick={function(){removeProduct(item.product.id)}} className='btn tw-bg-red-600 hover:tw-bg-red-800 text-white my-2 w-100'>Remove</button>
-                      <div style={{'zIndex': '99999' , 'marginLeft':'5px','display':'none'}} className="rounded-4 removed position-fixed start-0 bottom-0 bg-dark alert text-white">Removed successfully...</div>
-                    
-                    
-                    
+  async function deleteFromCart(id) {
+    let {data}  = await removeItem(id);
+    setCartDetails(data);
+    
+  }
+  async function updateCount(id , count) {
+    let {data}  = await updateProductCount(id , count);
+    setCartDetails(data);
+    
+  }
+  useEffect(() => {
+    getCart();
+  }, []);
 
+  return (
+    <>
+      {cartDetails ? (
+        <div  className="w-75 mx-auto p-5 bg-main-light mt-5 animate__animated  animate__fadeIn">
+          <h3>Shopping Cart </h3>
+          <h4 className="h6 text-main fw-bolder">
+            Cart Items :{cartDetails.numOfCartItems}{" "}
+          </h4>
+          <h4 className="h6 text-branch fw-bolder">
+            Total Cart Price : {cartDetails.data.totalCartPrice} EGP{" "}
+          </h4>
+          
+          {cartDetails?.data?.products.map((product) => (
+            <div key={product._id} className="row border-bottom  py-2 px-2  ">
+              <div className="col-md-1">
+                <img
+                  className="w-100"
+                  src={product.product.imageCover}
+                  alt="productImage"
+                  />
+              </div>
+
+              <div   className="col-md-11">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h4 className="h6">
+                      {product.product.title.split(" ").slice(0, 3).join(" ")}
+                    </h4>
+                    <h4 className="h6 ">{product.price} :EGP</h4>
                   </div>
-
-                  
+                  <div>
+                    <button onClick={()=> updateCount(product.product.id , product.count +1)} className="btn bg-main btn-brdr-main p-1 mx-2 text-light">+</button>
+                    <span>{product.count}</span>
+                 
+                    <button onClick={()=> updateCount(product.product.id , product.count -1)} className="btn bg-main btn-brdr-main p-1 mx-2 text-light">-</button>
+                  </div>
                 </div>
-              );
-            })}
-    </div>
-  </div> : <LoadingScreen/>}
-  
-  
-  
-  </>
+                <span className="btn  text-light ">
+                  <i onClick={()=>deleteFromCart(product.product.id)} className="text-branch fas fa-trash-can"></i>{" "}
+                </span>
+
+              </div>
+            </div>
+          ))}
+          <Link  to={'/Address'} className="btn bg-main w-25  p-1 mt-4 text-light">Online payment</Link>
+        </div>
+      ) : (
+        <div className="loading-page w-100 vh-100 d-flex justify-content-center align-items-center">
+        <InfinitySpin width="200" color="rgb(24, 7, 109)" />
+      </div>
+      )}
+    </>
+  );
 }
